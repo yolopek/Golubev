@@ -1,18 +1,93 @@
 import csv
 import re
-import datetime
 import sys
-import os
-from prettytable import PrettyTable
+from var_dump import var_dump
 
-clean_items = re.compile('<.*?>')
-def clean_html(raw_html):
-    clean_text = re.sub(clean_items, '', raw_html).replace('\n', ', ').replace('\r\n', ' ').strip()
-    clean_text = re.sub(" +", ' ', clean_text)
-    clean_text = ' '.join(clean_text.split())
-    return clean_text
+class DataSet:
+    """Класс для представления массива вакансий по имени файла
+
+    Attributes:
+        file_name (str): Название файла
+        vacancies_objects (array): Массив вакансий
+    """
+    def __init__(self, file_name, vacancies_objects):
+        """Инициализирует объект DataSet
+
+        Args:
+            file_name (str): Название файла
+            vacancies_objects (array): Массив вакансий
+        """
+        self.file_name = file_name
+        self.vacancies_objects = vacancies_objects
+        
+class Vacancy:
+    """Класс для представления вакансии
+
+        Attributes:
+            name(str): Название вакансии
+            description(str): Описание вакансии
+            key_skills(str): Ключевые навыки
+            experience_id(int or float): Опыт работы
+            premium(bool): Наличие премии у вакансии
+            employer_name(str): Имя работодателя
+            salary(int): Возможная зарплата
+            area_name(str): Расположение вакансии
+            published_at(datetime): Дата публикации вакансии
+    """
+    def __init__(self, name, description, key_skills, experience_id, premium, employer_name, salary, area_name, published_at):
+        """Инициализирует объект Vacancy
+
+        Args:
+            name(str): Название вакансии
+            description(str): Описание вакансии
+            key_skills(str): Ключевые навыки
+            experience_id(int or float): Опыт работы
+            premium(bool): Наличие премии у вакансии
+            employer_name(str): Имя работодателя
+            salary(int): Возможная зарплата
+            area_name(str): Расположение вакансии
+            published_at(datetime): Дата публикации вакансии
+        """
+        self.name = name
+        self.description = description
+        self.key_skills = key_skills
+        self.experience_id = experience_id
+        self.premium = premium
+        self.employer_name = employer_name
+        self.salary = salary
+        self.area_name = area_name
+        self.published_at = published_at
+
+class Salary:
+    """Класс для представления зарплаты
+    
+        Attributes:
+            salary_from(int): Нижняя граница зарплаты
+            salary_to(int): Верхняя граница зарплаты
+            salary_gross(bool)
+            salary_currency(str): Валюта зарплаты
+    """
+    def __init__(self, salary_from, salary_to, salary_gross, salary_currency):
+        """Инициализирует объект Salary
+
+        Args:
+            salary_from(int): Нижняя граница зарплаты
+            salary_to(int): Верхняя граница зарплаты
+            salary_gross(bool)
+            salary_currency(str): Валюта зарплаты
+        """
+        self.salary_from = salary_from
+        self.salary_to = salary_to
+        self.salary_gross = salary_gross
+        self.salary_currency = salary_currency
 
 def csv_reader(file_name):
+    """Считывает назваение файла и разделяет содержимое на массив заголовков и на массив данных
+
+    Returns:
+        headers(array): Массив заголовков
+        data(array): Массив данных
+    """
     data = []
     with open(file_name, encoding='utf-8-sig') as r_file:
         file_reader = csv.reader(r_file)
@@ -22,137 +97,87 @@ def csv_reader(file_name):
             list_files = [x for x in i if x != '']
             if (len(list_files) == len(headers)):
                 data.append(list_files)
-
-    if (len(data) == 0):
-        print('Нет данных')
-        sys.exit()
     return headers, data
 
-def formatter(line, headers):
-    income_info = ''
-    refactor_line = []
-    for i in range(0, len(headers)):
-        line[i] = clean_html(line[i])
-        if (i == 3):
-            refactor_line.append(experience[line[i]])
-        elif (i == 4):
-            if (line[i] == 'FALSE' or line[i] == 'False'):
-                refactor_line.append('Нет')
-            elif (line[i] == 'TRUE' or line[i] == 'True'):
-                refactor_line.append('Да')
-        elif (5 < i < 10):
-            if (i == 6):
-                first_number = '{0:,}'.format(int(float(line[i]))).replace(',', ' ')
-                second_number = '{0:,}'.format(int(float(line[i + 1]))).replace(',', ' ')
-                income_info = f'{(first_number)} - {second_number} ({currencies[line[i + 3]]}) '
-            if (i == 8):
-                if (line[i] == 'FALSE' or line[i] == 'False'):
-                    income_info += '(С вычетом налогов)'
-                elif (line[i] == 'TRUE' or line[i] == 'True'):
-                    income_info += '(Без вычета налогов)'
-            if (i == 9):
-                refactor_line.append(income_info)
-        elif (i == 9):
-            refactor_line.append(currencies[line[i]])
-        elif (i == 11):
-            refactor_line.append(datetime.datetime.strptime(line[i][:10], "%Y-%m-%d").strftime("%d.%m.%Y"))
-        else:
-            refactor_line.append(line[i])
-    return refactor_line
+def input_correct():
+    """Принимает название файла и параметры от пользователя для фильтрации данных
 
-def csv_filer(headers, data):
-    headers_refactor = []
-    for index in range(len(headers)):
-        if (index == 6):
-            headers_refactor.append('salary')
-        elif (headers[index] != 'salary_from' and headers[index] != 'salary_to'
-              and headers[index] != 'salary_gross' and headers[index] != 'salary_currency'):
-            headers_refactor.append(headers[index])
+    Returns:
+        file_name(str): название файла
+        filter_name(str): название фильтра
+        filter_value(str): величина фильтра
+        sort_param(str): параметр сортировки
+        sord_order(str): порядок сортировки
+        ranges(str): диапазон сортировки
+        colums(str): требуемые столбцы
+    """
+    file_name = input("Введите название файла: ")
+    filter_param = input("Введите параметр фильтрации: ")
+    sort_param = input("Введите параметр сортировки: ")
+    sort_order = input("Обратный порядок сортировки (Да / Нет): ")
+    ranges = input("Введите диапазон вывода: ")
+    colums = input("Введите требуемые столбцы: ")
+    if filter_param != "":
+        if filter_param.find(":") == -1:
+            print("Данные некорректны!")
+            return
+        filter_name = filter_param[:filter_param.find(":")]
+        filter_value = filter_param[:filter_param.find(":") + 2:]
+    else:
+        filter_name = ""
+        filter_value = ""
+    return file_name, filter_name, filter_value, sort_param, sort_order, ranges, colums
 
-    refactor_data = []
-    for line in data:
-        refactor_data.append(formatter(line, headers))
+def make_parse(file_name):
+    """Очищает элементы массива с данными от лишней информации
 
-    return headers_refactor, refactor_data
+    Returns:
+        vacancies(array): массив с очищенными данными
+    """
+    result_parse = []
+    with open(file_name, encoding='utf_8_sig') as r_file:
+        file_reader = csv.reader(r_file, delimiter = ",")
+        for line in file_reader:
+            result_parse.append(line)
 
-def table_vacancies(headers, data):
-    table = PrettyTable()
-    field_names = ['№']
-    for names in headers:
-        field_names.append(main_names[names])
+    try:
+        row_name = result_parse.pop(0)
+    except Exception:
+        print('Пустой файл')
+        sys.exit()
 
-    table.field_names = field_names
-    table.hrules = 1
-    table.align = 'l'
-    table.max_width = 20;
+    all_vacancies = []
+    for line in result_parse:
+        if len(row_name) == len(line) and '' not in line:
+            all_vacancies.append(line)
 
-    number_line = 1
-    for i in range(len(data)):
-        row = [str(number_line)]
-        format_line = []
-        for j in range (len(data[i])):
-            if (len(data[i][j]) > 100):
-                if (j == 2):
-                    format_line.append(data[i][j].replace(", ", "\n")[:100] + "...")
-                else:
-                    format_line.append(data[i][j][:100] + "...")
+    vacancies = []
+    for line in all_vacancies:
+        dict_result = {}
+        for i in range(0, len(row_name)):
+            list_values = []
+            if line[i].find('\n') != -1:
+                for j in line[i].split("\n"):
+                    lines = " ".join(re.sub(r"<[^>]+>", "", j).split())
+                    list_values.append(lines)
             else:
-                if (j == 2):
-                    format_line.append(data[i][j].replace(", ", "\n"))
-                else:
-                    format_line.append(data[i][j])
-        row.extend(format_line)
-        table.add_row(row)
-        number_line += 1
+                list_values = " ".join(re.sub(r"<[^>]+>", "", line[i]).split())
+            dict_result[row_name[i]] = list_values
+        vacancies.append(dict_result)
+    return vacancies
 
-    return table
+file_name, filter_name, filter_value, sort_param, sort_order, ranges, colums = input_correct()
+data_vacancies = make_parse(file_name)
+vacancies_objects = []
+for vacancy in data_vacancies:
+    salary_object = Salary(vacancy["salary_from"], vacancy["salary_to"], vacancy["salary_gross"], vacancy["salary_currency"])
+    vacancy_object = Vacancy(vacancy["name"], vacancy["description"], vacancy["key_skills"], vacancy["experience_id"] ,vacancy["premium"], vacancy["employer_name"], salary_object, vacancy["area_name"], vacancy["published_at"])
+    vacancies_objects.append(vacancy_object)
 
-main_names = dict({'name': 'Название', 'description' : 'Описание', 'key_skills': 'Навыки',
-                   'experience_id': 'Опыт работы', 'premium': 'Премиум-вакансия', 'employer_name': 'Компания',
-                   'salary': 'Оклад',
-                   'area_name': 'Название региона', 'published_at': 'Дата публикации вакансии'})
-
-experience = dict({"noExperience": "Нет опыта", "between1And3": "От 1 года до 3 лет",
-                   "between3And6": "От 3 до 6 лет", "moreThan6": "Более 6 лет"})
-
-currencies = dict({"AZN": "Манаты", "BYR": "Белорусские рубли", "EUR": "Евро", "GEL": "Грузинский лари",
-                   "KGS": "Киргизский сом", "KZT": "Тенге", "RUR": "Рубли", "UAH": "Гривны", "USD": "Доллары",
-                   "UZS": "Узбекский сум"})
-
-file = input()
-numbers_rows = input().split(' ')
-name_rows = input().split(', ')
-file_pycharm = "vacancies_medium.csv"
-
-if (os.stat(file).st_size == 0):
-    print("Пустой файл")
-    sys.exit()
-
-main_headers, main_data = csv_reader(file)
-
-main_headers_refactor, main_refactor_data = csv_filer(main_headers, main_data)
-
-table = table_vacancies(main_headers_refactor, main_refactor_data)
-
-if (numbers_rows[0] == ''):
-    if (name_rows[0] == ''):
-        print(table)
-    else:
-        table = table.get_string(fields = ['№'] + name_rows)
-        print(table)
-    sys.exit()
+var_dump(DataSet(file_name, vacancies_objects))
 
 
-if (len(numbers_rows) == 2):
-    if (name_rows[0] != ''):
-        table = table.get_string(start=int(numbers_rows[0]) - 1, end=int(numbers_rows[1]) - 1, fields=['№'] + name_rows)
-    else:
-        table = table.get_string(start=int(numbers_rows[0]) - 1, end=int(numbers_rows[1]) - 1)
-elif (len(numbers_rows) == 1):
-    if (name_rows[0] != ''):
-        table = table.get_string(start=int(numbers_rows[0]) - 1, fields=['№'] + name_rows)
-    else:
-        table = table.get_string(start=int(numbers_rows[0]) - 1)
 
-print(table)
+
+
 
