@@ -1,6 +1,7 @@
 import csv
 import re
 import sys
+import doctest
 from var_dump import var_dump
 
 class DataSet:
@@ -17,6 +18,7 @@ class DataSet:
             file_name (str): Название файла
             vacancies_objects (array): Массив вакансий
         """
+
         self.file_name = file_name
         self.vacancies_objects = vacancies_objects
         
@@ -47,6 +49,27 @@ class Vacancy:
             salary(int): Возможная зарплата
             area_name(str): Расположение вакансии
             published_at(datetime): Дата публикации вакансии
+
+            >>> type(Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).__name__
+            'Vacancy'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).name
+            'Программист'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).description
+            'Описание профессии'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).key_skills
+            'Ответственность'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).experience_id
+            '5'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).premium
+            'True'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).employer_name
+            'Контур'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).salary
+            Salary('10', '24', 'False', 'RUR')
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).area_name
+            'Челябинск'
+            >>> Vacancy('Программист', 'Описание профессии', 'Ответственность', '5', 'True', 'Контур', Salary('10', '24', 'False', 'RUR'), 'Челябинск', '2022-07-06T00:15:41+0300')).published_at
+            '2022-07-06T00:15:41+0300'
         """
         self.name = name
         self.description = description
@@ -75,29 +98,22 @@ class Salary:
             salary_to(int): Верхняя граница зарплаты
             salary_gross(bool)
             salary_currency(str): Валюта зарплаты
+
+            >>> type(Salary('10', '24', 'False', 'RUR')).__name__
+            'Salary'
+            >>> Salary('10', '24', 'False', 'RUR').salary_from
+            '10'
+            >>> Salary('10', '24', 'False', 'RUR').salary_to
+            '24'
+            >>> Salary('10', '24', 'False', 'RUR').salary_gross
+            'False'
+            >>> Salary('10', '24', 'False', 'RUR').salary_currency
+            'RUR'
         """
         self.salary_from = salary_from
         self.salary_to = salary_to
         self.salary_gross = salary_gross
         self.salary_currency = salary_currency
-
-def csv_reader(file_name):
-    """Считывает назваение файла и разделяет содержимое на массив заголовков и на массив данных
-
-    Returns:
-        headers(array): Массив заголовков
-        data(array): Массив данных
-    """
-    data = []
-    with open(file_name, encoding='utf-8-sig') as r_file:
-        file_reader = csv.reader(r_file)
-        headers = next(file_reader)
-        lines = list(file_reader)
-        for i in lines:
-            list_files = [x for x in i if x != '']
-            if (len(list_files) == len(headers)):
-                data.append(list_files)
-    return headers, data
 
 def input_correct():
     """Принимает название файла и параметры от пользователя для фильтрации данных
@@ -133,6 +149,9 @@ def make_parse(file_name):
 
     Returns:
         vacancies(array): массив с очищенными данными
+
+        >>> make_parse("vacancies_null.csv")
+        "Пустой файл"
     """
     result_parse = []
     with open(file_name, encoding='utf_8_sig') as r_file:
